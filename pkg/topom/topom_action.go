@@ -56,20 +56,6 @@ func (s *Topom) ProcessSlotAction() error {
 				break
 			}
 			var fut sync2.Future
-			for sid, _ := range plans {
-				fut.Add()
-				go func(sid int) {
-					log.Warnf("slot-[%d] process action", sid)
-					var err = s.processSlotAction(tid, sid)
-					if err != nil {
-						status := fmt.Sprintf("[ERROR] Slot[%04d]: %s", sid, err)
-						s.action.progress.status.Store(status)
-					} else {
-						s.action.progress.status.Store("")
-					}
-					fut.Done(strconv.Itoa(sid), err)
-				}(sid)
-			}
 			for _, v := range fut.Wait() {
 				if v != nil {
 					return v.(error)
@@ -98,8 +84,6 @@ func (s *Topom) processSlotAction(tid int, sid int) error {
 			if n == 0 && nextdb == -1 {
 				return s.SlotActionComplete(tid, sid)
 			}
-			status := fmt.Sprintf("[OK] Slot[%04d]@DB[%d]=%d", sid, tid, n)
-			s.action.progress.status.Store(status)
 
 			if us := s.GetSlotActionInterval(); us != 0 {
 				time.Sleep(time.Microsecond * time.Duration(us))
